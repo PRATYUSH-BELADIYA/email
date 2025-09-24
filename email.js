@@ -82,11 +82,22 @@ const dotenv = require('dotenv');
 dotenv.config();
 const express = require('express');
 const multer = require('multer');
+const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const cloudinary = require('cloudinary').v2;
+
 
 const app = express();
+app.use(cors());
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 // Multer setup for file uploads
 const upload = multer({ dest: 'uploads/' });
@@ -135,6 +146,59 @@ app.post('/send-email', upload.single('htmlFile'), async (req, res) => {
   fs.unlinkSync(filePath); // cleanup
   res.json({ results });
 });
+
+
+app.post('/upload-music', upload.single('music'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Upload file to Cloudinary as audio
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      resource_type: 'video', // for audio or video files
+      folder: 'music_uploads', // optional folder
+    });
+
+    // Delete local file after upload
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      message: 'Music uploaded successfully',
+      url: result.secure_url,
+      public_id: result.public_id,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Upload failed', error });
+  }
+});
+
+
+app.get('/get-audios', async (req, res) => {
+  try {
+    // List all resources in folder "music_uploads"
+    const result = await cloudinary.api.resources({
+      type: 'upload',
+      resource_type: 'video', // audio is considered "video" in Cloudinary
+      prefix: 'music_uploads/', // folder name
+      max_results: 100, // adjust as needed
+    });
+
+    // Map to only send necessary info
+    const audios = result.resources.map(file => ({
+      name: file.public_id.split('/').pop() + '.' + file.format, // get file name
+      url: file.secure_url,
+      public_id: file.public_id,
+    }));
+
+    res.json(audios);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch audio files', error });
+  }
+});
+
 
 // Start server
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
