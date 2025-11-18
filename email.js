@@ -199,6 +199,27 @@ app.get('/get-audios', async (req, res) => {
   }
 });
 
+app.delete("/delete-audio/:public_id", async (req, res) => {
+  const { public_id } = req.params;
+
+  try {
+    const result = await cloudinary.uploader.destroy(public_id, {
+      resource_type: "video"
+    });
+
+    if (result.result !== "ok") {
+      return res.status(400).json({ message: "Failed to delete audio" });
+    }
+
+    // Optional: remove from MongoDB
+    await AudioModel.findOneAndDelete({ public_id });
+
+    res.json({ message: "Audio deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 // Start server
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
