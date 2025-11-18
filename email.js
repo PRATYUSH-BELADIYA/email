@@ -94,9 +94,9 @@ app.use(cors());
 
 // Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: "dvuu8jdi5",
+  api_key: 455356842469718,
+  api_secret: "PZVXNaLfBZHkyEzkwxe7X8MHxks",
 });
 
 // Multer setup for file uploads
