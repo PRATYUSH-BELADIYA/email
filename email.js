@@ -84,8 +84,6 @@ const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
 const fs = require('fs');
-const path = require('path');
-const nodemailer = require('nodemailer');
 const cloudinary = require('cloudinary').v2;
 
 
@@ -103,50 +101,6 @@ cloudinary.config({
 const upload = multer({ dest: 'uploads/' });
 
 // Transporter setup
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.PASS,
-  },
-});
-
-app.post('/send-email', upload.single('htmlFile'), async (req, res) => {
-  let { recipients, subject } = JSON.parse(req.body.data || "{}"); 
-  // "data" will carry JSON (recipients array, subject, etc.)
-
-  if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
-    return res.status(400).json({ message: 'Recipients must be a non-empty array of emails.' });
-  }
-
-  if (!req.file) {
-    return res.status(400).json({ message: 'HTML file is required.' });
-  }
-
-  const filePath = path.join(__dirname, req.file.path);
-  let htmlContent = fs.readFileSync(filePath, 'utf8');
-
-  const results = [];
-  for (const email of recipients) {
-    try {
-      const info = await transporter.sendMail({
-        from: process.env.EMAIL,
-        to: email,
-        subject: subject || 'Dynamic HTML Email',
-        html: htmlContent,
-      });
-      results.push({ email, status: 'sent', messageId: info.messageId });
-    } catch (err) {
-      results.push({ email, status: 'failed', error: err.message });
-    }
-  }
-
-  fs.unlinkSync(filePath); // cleanup
-  res.json({ results });
-});
-
 
 app.post('/upload-music', upload.single('music'), async (req, res) => {
   try {
